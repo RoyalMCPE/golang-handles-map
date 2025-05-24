@@ -1,3 +1,3 @@
-module github.com/royalmcpe/handle-map
+module github.com/royalmcpe/golang-handles-map
 
 go 1.24.2
