@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
 	handles "github.com/royalmcpe/handle-map"
 )
@@ -24,11 +24,17 @@ func (e Entity) Handle() *handles.Handle {
 
 func main() {
 	m := handles.NewMap[Entity](1024)
-	handle, ok := m.Add(Entity{Name: "Test"})
-	if !ok {
-		panic("no entity")
+	handle1, ok1 := m.Add(Entity{Name: "Test"})
+	handle2, ok2 := m.Add(Entity{Name: "Test2"})
+	if !ok1 || !ok2 {
+		panic(fmt.Sprintf("handle1: %v, handle2: %v", handle1, handle2))
 	}
 
-	e := m.Get(handle)
-	log.Println(e.Name)
+	if h2e := m.Get(handle2); h2e != nil {
+		h2e.Name = "Test3"
+	}
+
+	m.Remove(handle1)
+
+	_, _ = m.Add(Entity{Name: "Test4"})
 }

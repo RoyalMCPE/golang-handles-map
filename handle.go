@@ -33,40 +33,46 @@ type Handle struct {
 	gen uint32
 }
 
-func (handles *HandleMap[T, PT]) Add(value T) (*Handle, bool) {
-	if handles.nextUnused != 0 {
-		idx := handles.nextUnused
-		item := PT(handles.items[idx])
-		handles.nextUnused = handles.unused[idx]
-		handles.unused[idx] = 0
+func (m *HandleMap[T, PT]) Add(value T) (*Handle, bool) {
+	if m.nextUnused != 0 {
+		idx := m.nextUnused
+		item := PT(m.items[idx])
+		m.nextUnused = m.unused[idx]
+		m.unused[idx] = 0
+		handle := item.Handle()
+		if handle == nil {
+			handle = &Handle{}
+			item.SetHandle(handle)
+		}
 		gen := item.Handle().gen
 		*item = value
+		item.SetHandle(handle)
 		item.Handle().idx = idx
 		item.Handle().gen = gen + 1
-		handles.totalUnused -= 1
+		m.totalUnused -= 1
 		return item.Handle(), true
 	}
 
 	// 0 is a dummy element for 'no item'
-	if handles.usedItems == 0 {
-		handles.items[0] = new(T)
-		handles.usedItems += 1
+	if m.usedItems == 0 {
+		m.items[0] = new(T)
+		m.usedItems += 1
 	}
 
-	if handles.usedItems == uint32(len(handles.items)) {
+	if m.usedItems == uint32(len(m.items)) {
 		return nil, false
 	}
 
-	item := PT(handles.items[handles.usedItems])
+	item := PT(m.items[m.usedItems])
 	handle := item.Handle()
 	if handle == nil {
 		handle = new(Handle)
 	}
 	*item = value
 	item.SetHandle(handle)
-	item.Handle().idx = uint32(handles.usedItems)
+	item.Handle().idx = uint32(m.usedItems)
 	item.Handle().gen = 1
-	handles.usedItems += 1
+	m.usedItems += 1
 	return item.Handle(), true
 }
 
@@ -80,4 +86,17 @@ func (handles *HandleMap[T, PT]) Get(handle *Handle) *T {
 	}
 
 	return nil
+}
+
+func (m *HandleMap[T, PT]) Remove(handle *Handle) {
+	if handle.idx <= 0 || handle.idx >= m.usedItems {
+		return
+	}
+
+	if item := PT(m.items[handle.idx]); item.Handle() == handle {
+		m.unused[handle.idx] = m.nextUnused
+		m.nextUnused = handle.idx
+		m.totalUnused += 1
+		handle.idx = 0
+	}
 }
