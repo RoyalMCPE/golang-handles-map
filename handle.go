@@ -1,8 +1,7 @@
 package handles
 
 func NewMap[T any, PT interface {
-	Handle() *Handle
-	SetHandle(*Handle)
+	Handled
 	*T
 }](len int) HandleMap[T, PT] {
 	items := make([]*T, 0, len)
@@ -17,8 +16,7 @@ func NewMap[T any, PT interface {
 }
 
 type HandleMap[T any, PT interface {
-	Handle() *Handle
-	SetHandle(*Handle)
+	Handled
 	*T
 }] struct {
 	items       []*T
@@ -26,6 +24,11 @@ type HandleMap[T any, PT interface {
 	nextUnused  uint32
 	unused      []uint32
 	totalUnused uint32
+}
+
+type Handled interface {
+	Handle() *Handle
+	SetHandle(*Handle)
 }
 
 type Handle struct {

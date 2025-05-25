@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	handles "github.com/royalmcpe/handle-map"
+	handles "github.com/royalmcpe/golang-handles-map"
 )
 
 type EntityHandle handles.Handle
