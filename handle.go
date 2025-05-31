@@ -1,5 +1,7 @@
 package handles
 
+import "iter"
+
 func NewMap[T any, PT interface {
 	Handled
 	*T
@@ -101,5 +103,15 @@ func (m *HandleMap[T, PT]) Remove(handle *Handle) {
 		m.nextUnused = handle.idx
 		m.totalUnused += 1
 		handle.idx = 0
+	}
+}
+
+func (m *HandleMap[T, PT]) Iter() iter.Seq2[*T, *Handle] {
+	return func(yield func(*T, *Handle) bool) {
+		for _, v := range m.items {
+			if !yield(v, PT(v).Handle()) {
+				return
+			}
+		}
 	}
 }
