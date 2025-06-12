@@ -3,7 +3,7 @@ package handles
 func NewMap[T any](len int) HandleMap[T] {
 	items := make([]wrapper[T], 0, len)
 	for i := 0; i < len; i++ {
-		items = append(items, *new(wrapper[T]))
+		items = append(items, wrapper[T]{})
 	}
 
 	return HandleMap[T]{
@@ -47,7 +47,7 @@ func (handles *HandleMap[T]) Add(value T) (Handle, bool) {
 
 	// 0 is a dummy element for 'no item'
 	if handles.usedItems == 0 {
-		handles.items[0] = *new(wrapper[T])
+		handles.items[0] = wrapper[T]{}
 		handles.usedItems += 1
 	}
 
