@@ -76,3 +76,17 @@ func (handles *HandleMap[T]) Get(handle Handle) *T {
 
 	return nil
 }
+
+func (handles *HandleMap[T]) Remove(handle Handle) {
+	if handle.idx <= 0 || handle.idx >= handles.usedItems {
+		return
+	}
+
+	inst := handles.items[handle.idx]
+	if inst.handle.idx == handle.idx && inst.handle.gen == handle.gen {
+		handles.unused[handle.idx] = handles.nextUnused
+		handles.nextUnused = handle.idx
+		handles.totalUnused += 1
+		inst.handle.idx = 0
+	}
+}
