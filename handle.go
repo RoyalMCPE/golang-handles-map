@@ -1,27 +1,24 @@
 package handles
 
-func NewMap[T any, PT interface {
-	Handle() *Handle
-	SetHandle(*Handle)
-	*T
-}](len int) HandleMap[T, PT] {
-	items := make([]*T, 0, len)
+func NewMap[T any](len int) HandleMap[T] {
+	items := make([]wrapper[T], 0, len)
 	for i := 0; i < len; i++ {
-		items = append(items, new(T))
+		items = append(items, *new(wrapper[T]))
 	}
 
-	return HandleMap[T, PT]{
+	return HandleMap[T]{
 		items:  items,
 		unused: make([]uint32, len),
 	}
 }
 
-type HandleMap[T any, PT interface {
-	Handle() *Handle
-	SetHandle(*Handle)
-	*T
-}] struct {
-	items       []*T
+type wrapper[T any] struct {
+	data   T
+	handle Handle
+}
+
+type HandleMap[T any] struct {
+	items       []wrapper[T]
 	usedItems   uint32
 	nextUnused  uint32
 	unused      []uint32
@@ -33,50 +30,48 @@ type Handle struct {
 	gen uint32
 }
 
-func (handles *HandleMap[T, PT]) Add(value T) (*Handle, bool) {
+func (handles *HandleMap[T]) Add(value T) (Handle, bool) {
 	if handles.nextUnused != 0 {
 		idx := handles.nextUnused
-		item := PT(handles.items[idx])
+		inst := &handles.items[idx]
+		item := &inst.data
 		handles.nextUnused = handles.unused[idx]
 		handles.unused[idx] = 0
-		gen := item.Handle().gen
+		gen := inst.handle.gen
 		*item = value
-		item.Handle().idx = idx
-		item.Handle().gen = gen + 1
+		inst.handle.idx = idx
+		inst.handle.gen = gen + 1
 		handles.totalUnused -= 1
-		return item.Handle(), true
+		return inst.handle, true
 	}
 
 	// 0 is a dummy element for 'no item'
 	if handles.usedItems == 0 {
-		handles.items[0] = new(T)
+		handles.items[0] = *new(wrapper[T])
 		handles.usedItems += 1
 	}
 
 	if handles.usedItems == uint32(len(handles.items)) {
-		return nil, false
+		return Handle{}, false
 	}
 
-	item := PT(handles.items[handles.usedItems])
-	handle := item.Handle()
-	if handle == nil {
-		handle = new(Handle)
-	}
+	item := &handles.items[handles.usedItems].data
+	inst := &handles.items[handles.usedItems]
 	*item = value
-	item.SetHandle(handle)
-	item.Handle().idx = uint32(handles.usedItems)
-	item.Handle().gen = 1
+	inst.handle.idx = handles.usedItems
+	inst.handle.gen = 1
 	handles.usedItems += 1
-	return item.Handle(), true
+	return inst.handle, true
 }
 
-func (handles *HandleMap[T, PT]) Get(handle *Handle) *T {
+func (handles *HandleMap[T]) Get(handle Handle) *T {
 	if handle.idx <= 0 || handle.idx >= handles.usedItems {
 		return nil
 	}
 
-	if item := PT(handles.items[handle.idx]); item.Handle() == handle {
-		return item
+	inst := &handles.items[handle.idx]
+	if inst.handle.idx == handle.idx && inst.handle.gen == handle.gen {
+		return &inst.data
 	}
 
 	return nil
